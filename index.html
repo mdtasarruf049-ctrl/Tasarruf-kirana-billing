@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tasarruf Kirana Wholesale</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f3f4f6;color:#222}
+.header{background:#111827;color:white;padding:18px;text-align:center}
+.header h1{margin:0;font-size:24px}
+.header p{margin:6px 0 0;font-size:13px}
+.container{max-width:700px;margin:auto;padding:12px}
+.card{background:white;border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px #0001}
+h2{margin:0 0 12px;font-size:19px}
+input{width:100%;padding:12px;margin:5px 0 10px;border:1px solid #ccc;border-radius:8px;font-size:16px}
+table{width:100%;border-collapse:collapse;margin-top:10px}
+th,td{border-bottom:1px solid #ddd;padding:7px;text-align:left;font-size:13px}
+button{border:0;border-radius:8px;padding:11px 14px;font-size:15px;font-weight:bold;margin:4px 2px;cursor:pointer}
+.add{background:#2563eb;color:white}
+.save{background:#16a34a;color:white}
+.print{background:#374151;color:white}
+.whatsapp{background:#16a34a;color:white}
+.danger{background:#dc2626;color:white}
+.total{text-align:right;font-size:22px;font-weight:bold;margin-top:15px}
+.billno{font-size:14px;color:#555}
+.remove{background:#fee2e2;color:#b91c1c;padding:5px 8px}
+@media print{
+ button,.no-print{display:none!important}
+ body{background:white}
+ .card{box-shadow:none}
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+<h1>Tasarruf Kirana Wholesale</h1>
+<p>MD TASARRUF | GST: 07AAAAA0000A1Z1</p>
+<p>7488801340 / 7903236731</p>
+</div>
+
+<div class="container">
+
+<div class="card">
+<h2>🧾 नया बिल</h2>
+
+<div class="billno">
+Bill No: <b id="billNo"></b>
+</div>
+
+<input id="customer" placeholder="ग्राहक का नाम">
+<input id="mobile" placeholder="ग्राहक मोबाइल नंबर" type="tel">
+
+<table>
+<thead>
+<tr>
+<th>सामान</th>
+<th>Qty</th>
+<th>Rate</th>
+<th>Amount</th>
+<th></th>
+</tr>
+</thead>
+<tbody id="items"></tbody>
+</table>
+
+<button class="add no-print" onclick="addItem()">+ सामान जोड़ें</button>
+
+<div class="total">
+कुल: ₹ <span id="total">0.00</span>
+</div>
+</div>
+
+<div class="card no-print">
+<button class="save" onclick="saveBill()">💾 बिल सेव करें</button>
+<button class="print" onclick="window.print()">🖨️ Print / PDF</button>
+<button class="whatsapp" onclick="shareWhatsApp()">📱 WhatsApp</button>
+<button class="danger" onclick="newBill()">🗑️ नया बिल</button>
+</div>
+
+<div class="card">
+<h2>📋 सेव किए गए बिल</h2>
+<div id="history">अभी कोई बिल सेव नहीं है।</div>
+</div>
+
+</div>
+
+<script>
+let items=[];
+let billCounter=Number(localStorage.getItem("billCounter")||0)+1;
+
+function setBillNo(){
+ document.getElementById("billNo").innerText=
+ "TK-"+String(billCounter).padStart(4,"0");
+}
+
+function addItem(){
+ items.push({name:"",qty:1,rate:0});
+ render();
+}
+
+function removeItem(i){
+ items.splice(i,1);
+ render();
+}
+
+function render(){
+ let html="";
+ items.forEach((x,i)=>{
+  let amount=(Number(x.qty)||0)*(Number(x.rate)||0);
+  html+=`
+  <tr>
+   <td><input placeholder="Product" value="${x.name}"
+   oninput="items[${i}].name=this.value"></td>
+
+   <td><input type="number" min="1" value="${x.qty}"
+   oninput="items[${i}].qty=this.value;calculate()"></td>
+
+   <td><input type="number" min="0" value="${x.rate}"
+   oninput="items[${i}].rate=this.value;calculate()"></td>
+
+   <td>₹${amount.toFixed(2)}</td>
+
+   <td><button class="remove no-print"
+   onclick="removeItem(${i})">×</button></td>
+  </tr>`;
+ });
+ document.getElementById("items").innerHTML=html;
+ calculate();
+}
+
+function calculate(){
+ let total=items.reduce((sum,x)=>
+  sum+(Number(x.qty)||0)*(Number(x.rate)||0),0);
+ document.getElementById("total").innerText=total.toFixed(2);
+ renderHistory();
+}
+
+function saveBill(){
+ let customer=document.getElementById("customer").value||"Cash Customer";
+ let mobile=document.getElementById("mobile").value||"";
+ let total=document.getElementById("total").innerText;
+
+ if(items.length===0){
+  alert("पहले सामान जोड़ें");
+  return;
+ }
+
+ let bills=JSON.parse(localStorage.getItem("bills")||"[]");
+
+ bills.unshift({
+  no:document.getElementById("billNo").innerText,
+  customer,
+  mobile,
+  total,
+  date:new Date().toLocaleString("en-IN")
+ });
+
+ localStorage.setItem("bills",JSON.stringify(bills));
+
+ alert("बिल सेव हो गया ✅");
+ renderHistory();
+}
+
+function renderHistory(){
+ let bills=JSON.parse(localStorage.getItem("bills")||"[]");
+
+ if(!bills.length){
+  document.getElementById("history").innerHTML="अभी कोई बिल सेव नहीं है।";
+  return;
+ }
+
+ document.getElementById("history").innerHTML=bills.map(b=>`
+ <div style="padding:10px;border-bottom:1px solid #ddd">
+ <b>${b.no}</b> — ${b.customer}<br>
+ ₹${b.total} | ${b.date}
+ </div>
+ `).join("");
+}
+
+function shareWhatsApp(){
+ let mobile=document.getElementById("mobile").value.trim();
+ let customer=document.getElementById("customer").value||"Customer";
+ let bill=document.getElementById("billNo").innerText;
+ let total=document.getElementById("total").innerText;
+
+ let text=
+ `Tasarruf Kirana Wholesale%0A`+
+ `Bill No: ${bill}%0A`+
+ `Customer: ${customer}%0A`+
+ `Total: ₹${total}%0A%0A`+
+ `Thank you!`;
+
+ let url=mobile
+ ? `https://wa.me/91${mobile}?text=${text}`
+ : `https://wa.me/?text=${text}`;
+
+ window.open(url,"_blank");
+}
+
+function newBill(){
+ if(confirm("नया बिल बनाना है?")){
+  items=[];
+  document.getElementById("customer").value="";
+  document.getElementById("mobile").value="";
+  billCounter++;
+  localStorage.setItem("billCounter",billCounter);
+  setBillNo();
+  render();
+ }
+}
+
+setBillNo();
+addItem();
+renderHistory();
+</script>
+
+</body>
+</html>
